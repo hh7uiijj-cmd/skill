@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { doc, getDoc } from 'firebase/firestore';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import type { TransactionsStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
@@ -21,6 +20,7 @@ import { createTransaction, softDeleteTransaction, updateTransaction } from '../
 import { uploadReceipt } from '../../lib/storage';
 import { parseAmountToCents } from '../../lib/money';
 import type { Transaction, TransactionType } from '../../types/models';
+import { DateTimeField } from '../../components/DateTimeField';
 import {
   ChipRow,
   colors,
@@ -48,7 +48,6 @@ export default function TransactionFormScreen({ route, navigation }: Props) {
   const [type, setType] = useState<TransactionType>('expense');
   const [amountText, setAmountText] = useState('');
   const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [toAccountId, setToAccountId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -209,19 +208,7 @@ export default function TransactionFormScreen({ route, navigation }: Props) {
         />
 
         <FormLabel>วันที่ - เวลา</FormLabel>
-        <Text style={styles.dateText} onPress={() => setShowDatePicker(true)}>
-          {date.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
-        </Text>
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="datetime"
-            onChange={(_, selected) => {
-              setShowDatePicker(Platform.OS === 'ios');
-              if (selected) setDate(selected);
-            }}
-          />
-        )}
+        <DateTimeField value={date} onChange={setDate} />
 
         {type !== 'transfer' && (
           <>
@@ -282,16 +269,6 @@ export default function TransactionFormScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 60 },
-  dateText: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: '#fff',
-  },
   linkButton: { color: colors.primary, fontWeight: '600', paddingVertical: 8 },
   receiptPreview: { width: '100%', height: 180, borderRadius: 12, marginTop: 8 },
 });

@@ -85,6 +85,24 @@ firebase deploy --only storage
 
 > หากรันแอปแล้วเจอ error ลิงก์ "The query requires an index" ให้กด/เปิดลิงก์นั้นเพื่อสร้าง index เพิ่มเติมได้ทันที หรือเพิ่มลงใน `firestore.indexes.json` แล้ว deploy ใหม่
 
+### 5. (ทางเลือก) Deploy เป็นเว็บแอป (PWA) ขึ้น Firebase Hosting
+
+ใช้เมื่ออยากได้แอปที่ติดตั้งถาวรบนมือถือ (โดยเฉพาะ iPhone ที่ไม่มี Mac/ไม่จ่าย Apple Developer Program) โดยไม่ต้องรัน `npm run start` ค้างไว้อีกต่อไป:
+
+```
+npm run deploy:web
+```
+
+คำสั่งนี้จะ build เว็บเวอร์ชันของแอป (`expo export --platform web`) แล้ว deploy ขึ้น Firebase Hosting ให้อัตโนมัติ เมื่อเสร็จจะได้ URL แบบ `https://<project-id>.web.app`
+
+**วิธีติดตั้งเป็นไอคอนแอปบน iPhone:**
+1. เปิด URL ที่ได้ด้วย **Safari** บน iPhone (ต้องเป็น Safari เท่านั้น เบราว์เซอร์อื่นไม่รองรับ)
+2. กดปุ่ม Share (สี่เหลี่ยมมีลูกศรชี้ขึ้น)
+3. เลื่อนหา **"Add to Home Screen" / "เพิ่มไปที่หน้าจอโฮม"**
+4. จะได้ไอคอนแอปบนหน้าจอโฮม เปิดแล้วเต็มจอเหมือนแอปจริง ใช้งานได้โดยไม่ต้องพึ่งคอมพิวเตอร์หรือ Expo Go อีก
+
+หลังแก้โค้ดแล้วอยากอัปเดตเว็บที่ deploy ไว้ ก็แค่รัน `npm run deploy:web` ซ้ำอีกครั้ง
+
 ## หมายเหตุด้านสถาปัตยกรรม
 
 โปรเจกต์นี้เลือกใช้ Firebase (Firestore + Auth + Storage) แทนการเขียน backend server เอง ตามที่สเปกเสนอเป็นทางเลือก ดังนั้น "การ validate ฝั่ง backend" และ "การกันข้อมูลข้ามผู้ใช้" ถูกบังคับใช้ผ่าน **Firestore/Storage Security Rules** (เทียบเท่าเลเยอร์ backend) แทนโค้ด server แยกต่างหาก ส่วน "DB transaction กันยอดเพี้ยน" ใช้ Firestore's `runTransaction` ซึ่งเป็นกลไก atomic cross-document transaction ของ Firestore เอง
