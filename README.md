@@ -47,8 +47,9 @@ storage.rules                Security Rules สำหรับรูปใบเ
 1. ไปที่ [Firebase Console](https://console.firebase.google.com/) สร้างโปรเจกต์ใหม่
 2. เปิดใช้งาน **Authentication → Sign-in method → Email/Password**
 3. สร้าง **Firestore Database** (โหมด production)
-4. เปิดใช้งาน **Storage** (สำหรับรูปใบเสร็จ)
-5. เพิ่มแอป (Web app ก็พอ ใช้ config เดียวกันได้กับ Expo) แล้วคัดลอกค่า config
+4. เพิ่มแอป (Web app ก็พอ ใช้ config เดียวกันได้กับ Expo) แล้วคัดลอกค่า config
+
+> **Storage (สำหรับรูปใบเสร็จ)** เป็น optional — Firebase กำหนดให้ต้องอัปเกรดโปรเจกต์เป็นแผน **Blaze** (ผูกบัตรเครดิต แต่ยังมี free quota ให้อยู่) ก่อนถึงจะเปิดใช้ Storage ได้ ถ้ายังไม่พร้อมอัปเกรด ข้ามขั้นตอนนี้ไปก่อนได้เลย ฟีเจอร์อื่นทั้งหมดใช้งานได้ปกติ ส่วนการแนบรูปใบเสร็จจะแจ้งเตือนแบบไม่บล็อกการบันทึกธุรกรรม (บันทึกรายการได้ตามปกติ แค่ไม่มีรูปแนบ) เมื่อพร้อมค่อยเปิด Storage แล้ว deploy `storage.rules` เพิ่มทีหลังได้
 
 ### 2. ตั้งค่า environment variables
 
@@ -73,7 +74,13 @@ npm run start      # แล้วเปิดด้วย Expo Go หรือ�
 npm install -g firebase-tools
 firebase login
 firebase use --add        # เลือกโปรเจกต์ที่สร้างไว้
-firebase deploy --only firestore:rules,firestore:indexes,storage
+firebase deploy --only firestore:rules,firestore:indexes
+```
+
+ถ้าเปิดใช้งาน Storage แล้ว (อัปเกรดเป็น Blaze) ให้ deploy storage rules เพิ่มด้วย:
+
+```
+firebase deploy --only storage
 ```
 
 > หากรันแอปแล้วเจอ error ลิงก์ "The query requires an index" ให้กด/เปิดลิงก์นั้นเพื่อสร้าง index เพิ่มเติมได้ทันที หรือเพิ่มลงใน `firestore.indexes.json` แล้ว deploy ใหม่

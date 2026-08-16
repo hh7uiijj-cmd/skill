@@ -132,7 +132,15 @@ export default function TransactionFormScreen({ route, navigation }: Props) {
     try {
       let receiptUrl = existingReceiptUrl;
       if (receiptUri) {
-        receiptUrl = await uploadReceipt(user.uid, receiptUri);
+        try {
+          receiptUrl = await uploadReceipt(user.uid, receiptUri);
+        } catch {
+          // Storage อาจยังไม่ได้เปิดใช้งาน (ต้องอัปเกรดแผน Blaze) - บันทึกธุรกรรมต่อได้โดยไม่มีรูปใบเสร็จ
+          Alert.alert(
+            'แนบใบเสร็จไม่สำเร็จ',
+            'อัปโหลดรูปไม่ได้ (อาจยังไม่ได้เปิดใช้งาน Firebase Storage) รายการจะถูกบันทึกโดยไม่มีรูปใบเสร็จ'
+          );
+        }
       }
 
       const account = accounts.find((a) => a.id === accountId)!;
