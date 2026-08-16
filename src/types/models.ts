@@ -80,3 +80,22 @@ export interface Budget {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+export type DebtStatus = 'pending' | 'paid';
+
+export interface Debt {
+  id: string;
+  userId: string;
+  name: string;
+  amountCents: Cents;
+  dueDate: Timestamp;
+  categoryId: string;
+  accountId: string;
+  status: DebtStatus;
+  note: string;
+  /** ธุรกรรมรายจ่ายที่ถูกสร้างตอนกดจ่ายแล้ว (null ถ้ายังไม่จ่าย) */
+  paidTransactionId: string | null;
+  paidAt: Timestamp | null;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}

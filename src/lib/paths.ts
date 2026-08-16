@@ -19,3 +19,6 @@ export const transactionDocRef = (uid: string, transactionId: string) =>
 export const budgetsCol = (uid: string) => collection(db, 'users', uid, 'budgets');
 export const budgetDocRef = (uid: string, budgetId: string) =>
   doc(db, 'users', uid, 'budgets', budgetId);
+export const debtsCol = (uid: string) => collection(db, 'users', uid, 'debts');
+export const debtDocRef = (uid: string, debtId: string) =>
+  doc(db, 'users', uid, 'debts', debtId);

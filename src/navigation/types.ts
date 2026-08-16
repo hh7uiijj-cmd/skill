@@ -19,6 +19,11 @@ export type BudgetsStackParamList = {
   BudgetForm: { budgetId?: string; categoryId?: string | null } | undefined;
 };
 
+export type DebtsStackParamList = {
+  DebtsList: undefined;
+  DebtForm: { debtId?: string } | undefined;
+};
+
 export type SettingsStackParamList = {
   SettingsHome: undefined;
   CategoriesList: undefined;
@@ -30,6 +35,7 @@ export type MainTabParamList = {
   DashboardTab: undefined;
   TransactionsTab: undefined;
   BudgetsTab: undefined;
+  DebtsTab: undefined;
   AccountsTab: undefined;
   SettingsTab: undefined;
 };

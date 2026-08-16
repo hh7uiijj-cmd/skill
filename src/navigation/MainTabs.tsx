@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type {
   AccountsStackParamList,
   BudgetsStackParamList,
+  DebtsStackParamList,
   MainTabParamList,
   SettingsStackParamList,
   TransactionsStackParamList,
@@ -16,6 +17,8 @@ import TransactionsListScreen from '../screens/Transactions/TransactionsListScre
 import TransactionFormScreen from '../screens/Transactions/TransactionFormScreen';
 import BudgetsListScreen from '../screens/Budgets/BudgetsListScreen';
 import BudgetFormScreen from '../screens/Budgets/BudgetFormScreen';
+import DebtsListScreen from '../screens/Debts/DebtsListScreen';
+import DebtFormScreen from '../screens/Debts/DebtFormScreen';
 import AccountsListScreen from '../screens/Accounts/AccountsListScreen';
 import AccountFormScreen from '../screens/Accounts/AccountFormScreen';
 import TransferFormScreen from '../screens/Accounts/TransferFormScreen';
@@ -28,6 +31,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const TransactionsStack = createNativeStackNavigator<TransactionsStackParamList>();
 const AccountsStack = createNativeStackNavigator<AccountsStackParamList>();
 const BudgetsStack = createNativeStackNavigator<BudgetsStackParamList>();
+const DebtsStack = createNativeStackNavigator<DebtsStackParamList>();
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 
 function TransactionsNavigator() {
@@ -58,6 +62,15 @@ function BudgetsNavigator() {
   );
 }
 
+function DebtsNavigator() {
+  return (
+    <DebtsStack.Navigator screenOptions={{ headerTintColor: colors.primary }}>
+      <DebtsStack.Screen name="DebtsList" component={DebtsListScreen} options={{ title: 'หนี้ที่ต้องจ่าย' }} />
+      <DebtsStack.Screen name="DebtForm" component={DebtFormScreen} options={{ title: 'รายการหนี้' }} />
+    </DebtsStack.Navigator>
+  );
+}
+
 function SettingsNavigator() {
   return (
     <SettingsStack.Navigator screenOptions={{ headerTintColor: colors.primary }}>
@@ -73,6 +86,7 @@ const ICONS: Record<keyof MainTabParamList, string> = {
   DashboardTab: '📊',
   TransactionsTab: '📝',
   BudgetsTab: '🎯',
+  DebtsTab: '📋',
   AccountsTab: '👛',
   SettingsTab: '⚙️',
 };
@@ -90,6 +104,7 @@ export default function MainTabs() {
       <Tab.Screen name="DashboardTab" component={DashboardScreen} options={{ title: 'ภาพรวม' }} />
       <Tab.Screen name="TransactionsTab" component={TransactionsNavigator} options={{ title: 'ธุรกรรม' }} />
       <Tab.Screen name="BudgetsTab" component={BudgetsNavigator} options={{ title: 'งบประมาณ' }} />
+      <Tab.Screen name="DebtsTab" component={DebtsNavigator} options={{ title: 'หนี้' }} />
       <Tab.Screen name="AccountsTab" component={AccountsNavigator} options={{ title: 'บัญชี' }} />
       <Tab.Screen name="SettingsTab" component={SettingsNavigator} options={{ title: 'ตั้งค่า' }} />
     </Tab.Navigator>
