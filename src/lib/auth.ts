@@ -1,58 +1,37 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  updateProfile,
-} from 'firebase/auth';
-import { serverTimestamp, setDoc } from 'firebase/firestore';
-import { auth } from '../config/firebase';
-import { userDocRef } from './paths';
-import { seedDefaultCategories } from './categories';
-import { createAccount } from './accounts';
+import { SignJWT, jwtVerify } from 'jose';
+import { env } from './env';
 
-const DEFAULT_CURRENCY = 'THB';
-const DEFAULT_TIMEZONE = 'Asia/Bangkok';
+export const SESSION_COOKIE = 'admin_session';
+const SESSION_TTL_SECONDS = 12 * 60 * 60; // 12 hours
 
-export async function signUp(email: string, password: string, displayName: string) {
-  const trimmedEmail = email.trim().toLowerCase();
-  if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) throw new Error('อีเมลไม่ถูกต้อง');
-  if (password.length < 6) throw new Error('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+function getSecretKey(): Uint8Array {
+  return new TextEncoder().encode(env.sessionSecret());
+}
 
-  const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
-  if (displayName.trim()) {
-    await updateProfile(cred.user, { displayName: displayName.trim() });
+export async function createSessionToken(): Promise<string> {
+  return new SignJWT({ role: 'admin' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
+    .sign(getSecretKey());
+}
+
+// Edge-safe: only uses Web Crypto via `jose`, no Node built-ins. Middleware
+// (which runs on the Edge Runtime) depends on this staying that way.
+export async function isValidSessionToken(token: string | undefined | null): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const { payload } = await jwtVerify(token, getSecretKey());
+    return payload.role === 'admin';
+  } catch {
+    return false;
   }
-
-  await setDoc(userDocRef(cred.user.uid), {
-    email: trimmedEmail,
-    displayName: displayName.trim(),
-    baseCurrency: DEFAULT_CURRENCY,
-    timezone: DEFAULT_TIMEZONE,
-    createdAt: serverTimestamp(),
-  });
-
-  await seedDefaultCategories(cred.user.uid);
-  await createAccount(
-    cred.user.uid,
-    {
-      name: 'เงินสด',
-      type: 'cash',
-      currency: DEFAULT_CURRENCY,
-      initialBalanceCents: 0,
-      color: '#0d9488',
-      icon: '💵',
-    },
-    0
-  );
-
-  return cred.user;
 }
 
-export async function signIn(email: string, password: string) {
-  const cred = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
-  return cred.user;
-}
-
-export async function signOutUser() {
-  await firebaseSignOut(auth);
-}
+export const sessionCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: SESSION_TTL_SECONDS,
+};
