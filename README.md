@@ -1,108 +1,112 @@
-# รายรับ–รายจ่าย (Income & Expense Tracker)
+# คลังงานวิจัย (Research Archive)
 
-แอปมือถือสำหรับบันทึกรายรับ–รายจ่ายส่วนบุคคล สร้างด้วย **Expo (React Native) + TypeScript + Firebase**
+เว็บไซต์เก็บและเผยแพร่งานวิจัย สร้างด้วย **Next.js (App Router) + TypeScript + Firestore (เก็บข้อมูล, แผนฟรี) + Vercel Blob (เก็บไฟล์ PDF, ไม่ต้องผูกบัตรเครดิต)**
 
-ครอบคลุมฟีเจอร์ตามสเปก **Phase 1 (MVP) + Phase 2 (ครบเครื่อง)**:
+## ฟีเจอร์หลัก
 
-- ระบบสมาชิก (สมัคร/เข้าสู่ระบบด้วยอีเมล-รหัสผ่าน ผ่าน Firebase Auth)
-- บันทึก/แก้ไข/ลบ (soft delete + กู้คืนได้) รายรับ-รายจ่าย พร้อมค้นหาและกรองตามเดือน/หมวดหมู่/บัญชี/โน้ต
-- หมวดหมู่ที่สร้าง/แก้ไข/จัดเรียงเองได้ พร้อมหมวดหมู่เริ่มต้นให้ตอนสมัคร
-- หลายบัญชี (เงินสด/ธนาคาร/บัตรเครดิต/e-Wallet) พร้อมยอดคงเหลือต่อบัญชีและยอดรวม
-- โอนเงินระหว่างบัญชี (ไม่นับเป็นรายรับ-รายจ่าย)
-- ตั้งงบประมาณรายเดือน (รวม หรือรายหมวดหมู่) พร้อมแถบความคืบหน้าและคำเตือนเมื่อใกล้/เกินงบ
-- Dashboard: สรุปรายรับ-รายจ่าย-คงเหลือ, กราฟวงกลมสัดส่วนรายจ่ายตามหมวดหมู่, กราฟเส้นแนวโน้มรายเดือน/รายปี
-- แนบรูปใบเสร็จ (Firebase Storage)
-- ส่งออกรายงานเป็น CSV/Excel และ PDF
+- **หน้าแรก** แสดงรายการงานวิจัยทั้งหมด กรองตาม "รุ่น" ได้
+- **หน้าอ่านออนไลน์** แบบเปิดหน้าหนังสือ (page-flip / e-book) พร้อมลายน้ำทับบนหน้าจอ ป้องกันการคัดลอก
+- **ดาวน์โหลดไฟล์** — ไฟล์ที่ดาวน์โหลดทุกครั้งจะถูกประทับลายน้ำ (ชื่อเว็บไซต์ + รุ่น + วันเวลาที่ดาวน์โหลด) ลงในทุกหน้าโดยอัตโนมัติ ไฟล์ต้นฉบับที่เก็บไว้จะไม่ถูกเปิดให้ดาวน์โหลดตรง ๆ
+- **ระบบแอดมิน** — ต้องกรอก "รหัสสำหรับแอดมิน" (Access Code) ก่อนจึงจะเพิ่ม/แก้ไข/ลบผลงานได้ ผู้เข้าชมทั่วไปดูและดาวน์โหลดได้โดยไม่ต้องมีบัญชี
+- แบบฟอร์มเพิ่ม/แก้ไขผลงานบังคับกรอก **ชื่อผลงาน** และ **รุ่น** ให้ชัดเจน (มีระบบแนะนำรุ่นเดิมที่เคยกรอกไว้ กันสะกดไม่ตรงกัน) พร้อมช่องผู้จัดทำและคำอธิบาย/บทคัดย่อ (ไม่บังคับ)
+- **ตั้งค่าธีมสี** (`/admin/theme`) — แอดมินเปลี่ยนโทนสีหลักของทั้งเว็บไซต์ได้เอง (สีหลัก/สีเน้น/พื้นหลัง/พื้นการ์ด/ตัวอักษร) มีผลทันทีทั่วทั้งเว็บโดยไม่ต้อง deploy ใหม่
 
-> Phase 3 (ธุรกรรมประจำ/แจ้งเตือน/สำรองข้อมูลอัตโนมัติ) ยังไม่รวมอยู่ในรอบนี้
+## หลักการสำคัญด้านสถาปัตยกรรม
 
-## หลักการสำคัญที่ยึดตามสเปก
-
-- **เก็บเงินเป็นจำนวนเต็มหน่วยสตางค์เสมอ** (`amountCents`) ไม่ใช้ float เลย (`src/lib/money.ts`)
-- **ข้อมูลทุกอย่างอยู่ใต้ `users/{uid}/...`** ทำให้ทุก query ถูกกรองด้วยเจ้าของข้อมูลโดยธรรมชาติ และ Firestore Security Rules ตรวจซ้ำด้วย `request.auth.uid` เสมอ (`firestore.rules`)
-- **ยอดคงเหลือบัญชีคำนวณผ่าน Firestore `runTransaction`** ทุกครั้งที่สร้าง/แก้ไข/ลบ/กู้คืนธุรกรรม เพื่อกันยอดเพี้ยนเมื่อมีการเขียนพร้อมกัน (`src/lib/transactions.ts`)
-- **Soft delete** ธุรกรรมด้วย `deletedAt` แทนการลบจริง เพื่อกู้คืนและเก็บประวัติได้
-- **Validation ฝั่งเซิร์ฟเวอร์เสมอ** ผ่าน Firestore Security Rules (ไม่พึ่งพา validation ฝั่ง client อย่างเดียว)
+- **ไม่มีการเข้าถึง Firestore จากฝั่ง client โดยตรง** ทุกการอ่าน-เขียนข้อมูลผ่าน Next.js API routes (`src/app/api/**`) ที่ใช้ Firebase **Admin SDK** เท่านั้น จึงกำหนด `firestore.rules` เป็น deny-all ไว้เป็นชั้นป้องกันซ้อน (defense in depth)
+- **ไฟล์ PDF เก็บใน Vercel Blob แบบ private access** (`src/lib/blobStorage.ts`) ไม่มี URL สาธารณะให้เข้าถึงตรง ๆ ต้องผ่าน token ฝั่งเซิร์ฟเวอร์เท่านั้น การอ่านไฟล์ (ทั้งหน้าอ่านออนไลน์และดาวน์โหลด) จึงยังคงถูกควบคุมผ่าน API routes เหมือนเดิม — Firestore เก็บแค่ข้อมูล (ชื่อ/รุ่น/ผู้แต่ง ฯลฯ) จึงใช้แผนฟรี **Spark** ได้ ไม่ต้องอัปเกรดเป็น **Blaze**
+- **สิทธิ์แอดมินแบบรหัสลับตัวเดียว (Access Code)** ไม่ใช่ระบบสมาชิก — ตรวจสอบด้วย `timingSafeEqual` กันการโจมตีแบบ timing attack และมีการจำกัดจำนวนครั้งที่ลองผิดต่อ IP (`src/lib/rateLimit.ts`) หลังยืนยันตัวตนสำเร็จจะได้รับ **session cookie** ที่เซ็นด้วย JWT (HttpOnly, `src/lib/auth.ts`) อายุ 12 ชั่วโมง ป้องกันเส้นทาง `/admin/*` ด้วย `src/middleware.ts`
+- **ลายน้ำ**: ไฟล์ดาวน์โหลดถูกประทับลายน้ำแบบไดนามิกด้วย `pdf-lib` + `@pdf-lib/fontkit` โดยฝังฟอนต์ไทย (`assets/fonts/NotoSansThai-Regular.ttf`, Noto Sans Thai ภายใต้ SIL OFL) ทุกครั้งที่กดดาวน์โหลด (`src/lib/watermark.ts`, `src/app/api/works/[id]/download/route.ts`) ส่วนหน้าอ่านออนไลน์ใช้ `react-pdf` render หน้ากระดาษเป็น canvas (ไม่มี text layer ให้คัดลอก) ผ่าน `react-pageflip` แล้วซ้อนลายน้ำด้วย CSS overlay ทับอีกชั้น (`src/components/Flipbook.tsx`)
+- **ธีมสีที่แก้ไขได้**: สีของเว็บถูกกำหนดเป็น CSS variables (`--color-primary`, `--color-accent`, `--color-bg`, `--color-surface`, `--color-ink`) ค่าเริ่มต้นและค่าที่แอดมินตั้งเองถูกเก็บใน Firestore (`settings/theme`, `src/lib/theme.ts`) แล้ว inject เป็น `<style>` ใน root layout (`src/app/layout.tsx`) ทุกครั้งที่โหลดหน้า ค่าสีถูกตรวจสอบรูปแบบ `#rrggbb` อย่างเข้มงวดทั้งตอนบันทึกและตอนอ่าน ก่อนฝังลง HTML โดยตรง เพื่อป้องกัน CSS/HTML injection
 
 ## โครงสร้างโปรเจกต์
 
 ```
-App.tsx                     entry point
 src/
-  config/firebase.ts         Firebase init (Auth + Firestore)
-  types/models.ts             โครงสร้างข้อมูล (Account, Category, Transaction, Budget)
-  lib/                        data access layer (Firestore CRUD, business logic, export)
-  context/                    AuthContext, DataContext (accounts/categories แบบ real-time)
-  navigation/                 React Navigation (auth stack + bottom tabs)
-  screens/                    หน้าจอแยกตามฟีเจอร์
-firestore.rules              Security Rules
-firestore.indexes.json       Composite indexes ที่ query ในแอปต้องใช้
-storage.rules                Security Rules สำหรับรูปใบเสร็จ
+  app/
+    page.tsx                      หน้าแรก (รายการผลงาน + กรองตามรุ่น)
+    works/[id]/page.tsx           หน้าอ่านออนไลน์ (flipbook + ดาวน์โหลด)
+    admin/
+      login/page.tsx              เข้าสู่ระบบด้วยรหัสแอดมิน
+      page.tsx                    แผงควบคุม (ตารางผลงาน + แก้ไข/ลบ)
+      upload/page.tsx             ฟอร์มเพิ่มผลงานใหม่
+      works/[id]/edit/page.tsx    ฟอร์มแก้ไขผลงาน
+    api/
+      auth/{login,logout,session}/route.ts
+      works/route.ts              GET รายการ / POST เพิ่มผลงาน (แอดมิน)
+      works/batches/route.ts      GET รายชื่อรุ่นที่มีอยู่ (สำหรับ autocomplete)
+      works/[id]/route.ts         GET / PATCH / DELETE รายชิ้น
+      works/[id]/view/route.ts    สตรีมไฟล์ต้นฉบับสำหรับหน้าอ่านออนไลน์
+      works/[id]/download/route.ts สตรีมไฟล์ที่ประทับลายน้ำแล้วให้ดาวน์โหลด
+  components/                     Flipbook, WorkForm, ปุ่มต่าง ๆ
+  lib/                            firebaseAdmin, blobStorage, auth, accessCode, watermark, works, validation
+  middleware.ts                   ป้องกันเส้นทาง /admin/*
+assets/fonts/                     ฟอนต์ไทยที่ฝังลงลายน้ำ PDF
+firestore.rules                   deny-all (เข้าถึงผ่าน Admin SDK เท่านั้น)
 ```
 
 ## เริ่มต้นใช้งาน
 
-### 1. สร้างโปรเจกต์ Firebase
+### 1. สร้างโปรเจกต์ Firebase (สำหรับเก็บข้อมูล — แผนฟรีพอ ไม่ต้องผูกบัตร)
 
 1. ไปที่ [Firebase Console](https://console.firebase.google.com/) สร้างโปรเจกต์ใหม่
-2. เปิดใช้งาน **Authentication → Sign-in method → Email/Password**
-3. สร้าง **Firestore Database** (โหมด production)
-4. เพิ่มแอป (Web app ก็พอ ใช้ config เดียวกันได้กับ Expo) แล้วคัดลอกค่า config
+2. เปิดใช้งาน **Firestore Database** (โหมด production) — ไม่ต้องเปิด Storage
+3. ไปที่ **Project settings > Service accounts** กด **Generate new private key** จะได้ไฟล์ JSON ที่มี `project_id`, `client_email`, `private_key`
 
-> **Storage (สำหรับรูปใบเสร็จ)** เป็น optional — Firebase กำหนดให้ต้องอัปเกรดโปรเจกต์เป็นแผน **Blaze** (ผูกบัตรเครดิต แต่ยังมี free quota ให้อยู่) ก่อนถึงจะเปิดใช้ Storage ได้ ถ้ายังไม่พร้อมอัปเกรด ข้ามขั้นตอนนี้ไปก่อนได้เลย ฟีเจอร์อื่นทั้งหมดใช้งานได้ปกติ ส่วนการแนบรูปใบเสร็จจะแจ้งเตือนแบบไม่บล็อกการบันทึกธุรกรรม (บันทึกรายการได้ตามปกติ แค่ไม่มีรูปแนบ) เมื่อพร้อมค่อยเปิด Storage แล้ว deploy `storage.rules` เพิ่มทีหลังได้
+### 2. สร้าง Vercel Blob store (สำหรับเก็บไฟล์ PDF — ไม่ต้องผูกบัตร บนแผน Hobby)
 
-### 2. ตั้งค่า environment variables
+1. สร้างโปรเจกต์บน [Vercel](https://vercel.com) จาก repo นี้ (หรือสร้างโปรเจกต์เปล่าไว้ก่อนก็ได้)
+2. ไปที่แท็บ **Storage** ของโปรเจกต์ > **Create Database** > เลือก **Blob**
+3. คัดลอกค่า **`BLOB_READ_WRITE_TOKEN`** จากหน้านั้นมาไว้ใช้ในขั้นตอนถัดไป (เมื่อ deploy จริงบน Vercel และผูก store กับโปรเจกต์แล้ว ค่านี้จะถูกใส่ให้อัตโนมัติทุกครั้งที่ deploy)
+
+> หมายเหตุ: แผน Hobby (ฟรี) ของ Vercel ให้ใช้ได้ 1GB Blob storage/เดือน แต่จำกัดไว้สำหรับโปรเจกต์ส่วนตัว/ไม่แสวงหารายได้ ถ้าเป็นเว็บเชิงพาณิชย์ต้องใช้แผน Pro
+
+### 3. ตั้งค่า environment variables
 
 ```
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-กรอกค่าจาก Firebase Console ลงใน `.env`
+กรอกค่าจากไฟล์ service account JSON ลงใน `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (คง `\n` ไว้ในบรรทัดเดียว) และใส่ `BLOB_READ_WRITE_TOKEN` จากขั้นตอนที่ 2
 
-### 3. ติดตั้งและรันแอป
+ตั้ง `ADMIN_ACCESS_CODE` เป็นรหัสที่แอดมินจะใช้เข้าสู่ระบบ และสุ่ม `SESSION_SECRET` ด้วยคำสั่ง:
+
+```
+openssl rand -base64 32
+```
+
+### 4. ติดตั้งและรัน
 
 ```
 npm install
-npm run start      # แล้วเปิดด้วย Expo Go หรือกด i/a สำหรับ simulator
+npm run dev
 ```
 
-### 4. Deploy Security Rules และ Indexes
+เปิด http://localhost:3000 — ไปที่ `/admin/login` เพื่อเข้าสู่ระบบแอดมินด้วยรหัสที่ตั้งไว้
 
-ต้องติดตั้ง [Firebase CLI](https://firebase.google.com/docs/cli) ก่อน:
+### 5. Deploy Security Rules ของ Firestore
 
 ```
 npm install -g firebase-tools
 firebase login
-firebase use --add        # เลือกโปรเจกต์ที่สร้างไว้
-firebase deploy --only firestore:rules,firestore:indexes
+firebase use --add
+firebase deploy --only firestore:rules
 ```
 
-ถ้าเปิดใช้งาน Storage แล้ว (อัปเกรดเป็น Blaze) ให้ deploy storage rules เพิ่มด้วย:
+### 6. Deploy เว็บไซต์
+
+แนะนำ [Vercel](https://vercel.com) เพราะเชื่อมกับ Blob store ที่สร้างไว้ในขั้นตอนที่ 2 ได้อัตโนมัติ — เชื่อม repo นี้ในหน้า Vercel แล้วตั้งค่า environment variables ชุดเดียวกับข้อ 3 ในหน้า Project Settings > Environment Variables จากนั้นกด deploy (ถ้า deploy บนแพลตฟอร์มอื่นที่ไม่ใช่ Vercel ต้องหาบริการเก็บไฟล์อื่นมาแทน Vercel Blob เอง เช่น Supabase Storage)
+
+รันเองในเครื่อง server ก็ได้เช่นกัน:
 
 ```
-firebase deploy --only storage
+npm run build
+npm run start
 ```
 
-> หากรันแอปแล้วเจอ error ลิงก์ "The query requires an index" ให้กด/เปิดลิงก์นั้นเพื่อสร้าง index เพิ่มเติมได้ทันที หรือเพิ่มลงใน `firestore.indexes.json` แล้ว deploy ใหม่
+## หมายเหตุด้านความปลอดภัย/ข้อจำกัด
 
-### 5. (ทางเลือก) Deploy เป็นเว็บแอป (PWA) ขึ้น Firebase Hosting
-
-ใช้เมื่ออยากได้แอปที่ติดตั้งถาวรบนมือถือ (โดยเฉพาะ iPhone ที่ไม่มี Mac/ไม่จ่าย Apple Developer Program) โดยไม่ต้องรัน `npm run start` ค้างไว้อีกต่อไป:
-
-```
-npm run deploy:web
-```
-
-คำสั่งนี้จะ build เว็บเวอร์ชันของแอป (`expo export --platform web`) แล้ว deploy ขึ้น Firebase Hosting ให้อัตโนมัติ เมื่อเสร็จจะได้ URL แบบ `https://<project-id>.web.app`
-
-**วิธีติดตั้งเป็นไอคอนแอปบน iPhone:**
-1. เปิด URL ที่ได้ด้วย **Safari** บน iPhone (ต้องเป็น Safari เท่านั้น เบราว์เซอร์อื่นไม่รองรับ)
-2. กดปุ่ม Share (สี่เหลี่ยมมีลูกศรชี้ขึ้น)
-3. เลื่อนหา **"Add to Home Screen" / "เพิ่มไปที่หน้าจอโฮม"**
-4. จะได้ไอคอนแอปบนหน้าจอโฮม เปิดแล้วเต็มจอเหมือนแอปจริง ใช้งานได้โดยไม่ต้องพึ่งคอมพิวเตอร์หรือ Expo Go อีก
-
-หลังแก้โค้ดแล้วอยากอัปเดตเว็บที่ deploy ไว้ ก็แค่รัน `npm run deploy:web` ซ้ำอีกครั้ง
-
-## หมายเหตุด้านสถาปัตยกรรม
-
-โปรเจกต์นี้เลือกใช้ Firebase (Firestore + Auth + Storage) แทนการเขียน backend server เอง ตามที่สเปกเสนอเป็นทางเลือก ดังนั้น "การ validate ฝั่ง backend" และ "การกันข้อมูลข้ามผู้ใช้" ถูกบังคับใช้ผ่าน **Firestore/Storage Security Rules** (เทียบเท่าเลเยอร์ backend) แทนโค้ด server แยกต่างหาก ส่วน "DB transaction กันยอดเพี้ยน" ใช้ Firestore's `runTransaction` ซึ่งเป็นกลไก atomic cross-document transaction ของ Firestore เอง
+- Access Code เป็นรหัสลับตัวเดียวใช้ร่วมกันของทีมแอดมิน ไม่ใช่ระบบสมาชิกรายบุคคล หากต้องการแยกสิทธิ์รายคนหรือดูประวัติว่าใครแก้ไข ควรอัปเกรดเป็นระบบ Firebase Auth ในอนาคต
+- การป้องกันด้วยลายน้ำช่วยระบุแหล่งที่มาและกันการคัดลอกทั่วไป แต่ไม่ใช่ DRM ที่ป้องกันการแคปหน้าจอได้ 100%
+- ไฟล์ PDF จำกัดขนาดไม่เกิน 50MB ต่อไฟล์ (ปรับได้ที่ `src/lib/validation.ts`)
+- Vercel Blob แผนฟรี (Hobby) กำหนดให้ใช้กับโปรเจกต์ส่วนตัว/ไม่แสวงหารายได้เท่านั้น — ดูรายละเอียดที่ [เอกสารราคา Vercel Blob](https://vercel.com/docs/vercel-blob/usage-and-pricing)
