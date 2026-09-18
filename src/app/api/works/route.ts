@@ -6,7 +6,8 @@ import { validatePdfFile, validateWorkFields } from '@/lib/validation';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const batch = searchParams.get('batch')?.trim() || undefined;
-  const works = await listWorks(batch);
+  const search = searchParams.get('search')?.trim() || undefined;
+  const works = await listWorks({ batch, search });
   return NextResponse.json({ works });
 }
 

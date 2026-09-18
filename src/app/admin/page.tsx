@@ -27,6 +27,9 @@ export default async function AdminDashboardPage() {
           <Link href="/admin/upload" className="btn btn-primary">
             + เพิ่มผลงานใหม่
           </Link>
+          <Link href="/admin/theme" className="btn btn-secondary">
+            ตั้งค่าธีมสี
+          </Link>
           <LogoutButton />
         </div>
       </div>

@@ -23,11 +23,26 @@ function toWorkRecord(id: string, data: FirebaseFirestore.DocumentData): WorkRec
   };
 }
 
-export async function listWorks(batch?: string): Promise<WorkRecord[]> {
+export async function listWorks(options: { batch?: string; search?: string } = {}): Promise<WorkRecord[]> {
   const db = getDb();
+  const search = options.search?.trim();
+
+  if (search) {
+    // Prefix match on title. Firestore range filters must be ordered by the
+    // same field, so a text search intentionally ignores the batch filter
+    // and the usual "newest first" ordering.
+    const snapshot = await db
+      .collection(COLLECTION)
+      .orderBy('title')
+      .where('title', '>=', search)
+      .where('title', '<=', `${search}`)
+      .get();
+    return snapshot.docs.map((doc) => toWorkRecord(doc.id, doc.data()));
+  }
+
   let query: FirebaseFirestore.Query = db.collection(COLLECTION);
-  if (batch) {
-    query = query.where('batch', '==', batch);
+  if (options.batch) {
+    query = query.where('batch', '==', options.batch);
   }
   query = query.orderBy('createdAt', 'desc');
   const snapshot = await query.get();
