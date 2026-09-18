@@ -1,6 +1,6 @@
 # คลังงานวิจัย (Research Archive)
 
-เว็บไซต์เก็บและเผยแพร่งานวิจัย สร้างด้วย **Next.js (App Router) + TypeScript + Firebase (Firestore + Storage ผ่าน Admin SDK)**
+เว็บไซต์เก็บและเผยแพร่งานวิจัย สร้างด้วย **Next.js (App Router) + TypeScript + Firestore (เก็บข้อมูล, แผนฟรี) + Vercel Blob (เก็บไฟล์ PDF, ไม่ต้องผูกบัตรเครดิต)**
 
 ## ฟีเจอร์หลัก
 
@@ -13,7 +13,8 @@
 
 ## หลักการสำคัญด้านสถาปัตยกรรม
 
-- **ไม่มีการเข้าถึง Firestore/Storage จากฝั่ง client โดยตรง** ทุกการอ่าน-เขียนข้อมูลผ่าน Next.js API routes (`src/app/api/**`) ที่ใช้ Firebase **Admin SDK** เท่านั้น จึงกำหนด `firestore.rules` และ `storage.rules` เป็น deny-all ไว้เป็นชั้นป้องกันซ้อน (defense in depth)
+- **ไม่มีการเข้าถึง Firestore จากฝั่ง client โดยตรง** ทุกการอ่าน-เขียนข้อมูลผ่าน Next.js API routes (`src/app/api/**`) ที่ใช้ Firebase **Admin SDK** เท่านั้น จึงกำหนด `firestore.rules` เป็น deny-all ไว้เป็นชั้นป้องกันซ้อน (defense in depth)
+- **ไฟล์ PDF เก็บใน Vercel Blob แบบ private access** (`src/lib/blobStorage.ts`) ไม่มี URL สาธารณะให้เข้าถึงตรง ๆ ต้องผ่าน token ฝั่งเซิร์ฟเวอร์เท่านั้น การอ่านไฟล์ (ทั้งหน้าอ่านออนไลน์และดาวน์โหลด) จึงยังคงถูกควบคุมผ่าน API routes เหมือนเดิม — Firestore เก็บแค่ข้อมูล (ชื่อ/รุ่น/ผู้แต่ง ฯลฯ) จึงใช้แผนฟรี **Spark** ได้ ไม่ต้องอัปเกรดเป็น **Blaze**
 - **สิทธิ์แอดมินแบบรหัสลับตัวเดียว (Access Code)** ไม่ใช่ระบบสมาชิก — ตรวจสอบด้วย `timingSafeEqual` กันการโจมตีแบบ timing attack และมีการจำกัดจำนวนครั้งที่ลองผิดต่อ IP (`src/lib/rateLimit.ts`) หลังยืนยันตัวตนสำเร็จจะได้รับ **session cookie** ที่เซ็นด้วย JWT (HttpOnly, `src/lib/auth.ts`) อายุ 12 ชั่วโมง ป้องกันเส้นทาง `/admin/*` ด้วย `src/middleware.ts`
 - **ลายน้ำ**: ไฟล์ดาวน์โหลดถูกประทับลายน้ำแบบไดนามิกด้วย `pdf-lib` + `@pdf-lib/fontkit` โดยฝังฟอนต์ไทย (`assets/fonts/NotoSansThai-Regular.ttf`, Noto Sans Thai ภายใต้ SIL OFL) ทุกครั้งที่กดดาวน์โหลด (`src/lib/watermark.ts`, `src/app/api/works/[id]/download/route.ts`) ส่วนหน้าอ่านออนไลน์ใช้ `react-pdf` render หน้ากระดาษเป็น canvas (ไม่มี text layer ให้คัดลอก) ผ่าน `react-pageflip` แล้วซ้อนลายน้ำด้วย CSS overlay ทับอีกชั้น (`src/components/Flipbook.tsx`)
 - **ธีมสีที่แก้ไขได้**: สีของเว็บถูกกำหนดเป็น CSS variables (`--color-primary`, `--color-accent`, `--color-bg`, `--color-surface`, `--color-ink`) ค่าเริ่มต้นและค่าที่แอดมินตั้งเองถูกเก็บใน Firestore (`settings/theme`, `src/lib/theme.ts`) แล้ว inject เป็น `<style>` ใน root layout (`src/app/layout.tsx`) ทุกครั้งที่โหลดหน้า ค่าสีถูกตรวจสอบรูปแบบ `#rrggbb` อย่างเข้มงวดทั้งตอนบันทึกและตอนอ่าน ก่อนฝังลง HTML โดยตรง เพื่อป้องกัน CSS/HTML injection
@@ -38,28 +39,35 @@ src/
       works/[id]/view/route.ts    สตรีมไฟล์ต้นฉบับสำหรับหน้าอ่านออนไลน์
       works/[id]/download/route.ts สตรีมไฟล์ที่ประทับลายน้ำแล้วให้ดาวน์โหลด
   components/                     Flipbook, WorkForm, ปุ่มต่าง ๆ
-  lib/                            firebaseAdmin, auth, accessCode, watermark, works, validation
+  lib/                            firebaseAdmin, blobStorage, auth, accessCode, watermark, works, validation
   middleware.ts                   ป้องกันเส้นทาง /admin/*
 assets/fonts/                     ฟอนต์ไทยที่ฝังลงลายน้ำ PDF
-firestore.rules / storage.rules   deny-all (เข้าถึงผ่าน Admin SDK เท่านั้น)
+firestore.rules                   deny-all (เข้าถึงผ่าน Admin SDK เท่านั้น)
 ```
 
 ## เริ่มต้นใช้งาน
 
-### 1. สร้างโปรเจกต์ Firebase
+### 1. สร้างโปรเจกต์ Firebase (สำหรับเก็บข้อมูล — แผนฟรีพอ ไม่ต้องผูกบัตร)
 
 1. ไปที่ [Firebase Console](https://console.firebase.google.com/) สร้างโปรเจกต์ใหม่
-2. เปิดใช้งาน **Firestore Database** (โหมด production)
-3. เปิดใช้งาน **Storage** (ต้องอัปเกรดเป็นแผน Blaze)
-4. ไปที่ **Project settings > Service accounts** กด **Generate new private key** จะได้ไฟล์ JSON ที่มี `project_id`, `client_email`, `private_key`
+2. เปิดใช้งาน **Firestore Database** (โหมด production) — ไม่ต้องเปิด Storage
+3. ไปที่ **Project settings > Service accounts** กด **Generate new private key** จะได้ไฟล์ JSON ที่มี `project_id`, `client_email`, `private_key`
 
-### 2. ตั้งค่า environment variables
+### 2. สร้าง Vercel Blob store (สำหรับเก็บไฟล์ PDF — ไม่ต้องผูกบัตร บนแผน Hobby)
+
+1. สร้างโปรเจกต์บน [Vercel](https://vercel.com) จาก repo นี้ (หรือสร้างโปรเจกต์เปล่าไว้ก่อนก็ได้)
+2. ไปที่แท็บ **Storage** ของโปรเจกต์ > **Create Database** > เลือก **Blob**
+3. คัดลอกค่า **`BLOB_READ_WRITE_TOKEN`** จากหน้านั้นมาไว้ใช้ในขั้นตอนถัดไป (เมื่อ deploy จริงบน Vercel และผูก store กับโปรเจกต์แล้ว ค่านี้จะถูกใส่ให้อัตโนมัติทุกครั้งที่ deploy)
+
+> หมายเหตุ: แผน Hobby (ฟรี) ของ Vercel ให้ใช้ได้ 1GB Blob storage/เดือน แต่จำกัดไว้สำหรับโปรเจกต์ส่วนตัว/ไม่แสวงหารายได้ ถ้าเป็นเว็บเชิงพาณิชย์ต้องใช้แผน Pro
+
+### 3. ตั้งค่า environment variables
 
 ```
 cp .env.example .env.local
 ```
 
-กรอกค่าจากไฟล์ service account JSON ลงใน `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (คง `\n` ไว้ในบรรทัดเดียว) และ `FIREBASE_STORAGE_BUCKET`
+กรอกค่าจากไฟล์ service account JSON ลงใน `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (คง `\n` ไว้ในบรรทัดเดียว) และใส่ `BLOB_READ_WRITE_TOKEN` จากขั้นตอนที่ 2
 
 ตั้ง `ADMIN_ACCESS_CODE` เป็นรหัสที่แอดมินจะใช้เข้าสู่ระบบ และสุ่ม `SESSION_SECRET` ด้วยคำสั่ง:
 
@@ -67,7 +75,7 @@ cp .env.example .env.local
 openssl rand -base64 32
 ```
 
-### 3. ติดตั้งและรัน
+### 4. ติดตั้งและรัน
 
 ```
 npm install
@@ -76,18 +84,20 @@ npm run dev
 
 เปิด http://localhost:3000 — ไปที่ `/admin/login` เพื่อเข้าสู่ระบบแอดมินด้วยรหัสที่ตั้งไว้
 
-### 4. Deploy Security Rules
+### 5. Deploy Security Rules ของ Firestore
 
 ```
 npm install -g firebase-tools
 firebase login
 firebase use --add
-firebase deploy --only firestore:rules,storage
+firebase deploy --only firestore:rules
 ```
 
-### 5. Deploy เว็บไซต์
+### 6. Deploy เว็บไซต์
 
-รองรับการ deploy บนแพลตฟอร์มที่รัน Next.js ได้ตามปกติ (เช่น Vercel หรือ Node server ของตัวเอง) — ตั้งค่า environment variables ชุดเดียวกับข้อ 2 บนแพลตฟอร์มที่ deploy ด้วย
+แนะนำ [Vercel](https://vercel.com) เพราะเชื่อมกับ Blob store ที่สร้างไว้ในขั้นตอนที่ 2 ได้อัตโนมัติ — เชื่อม repo นี้ในหน้า Vercel แล้วตั้งค่า environment variables ชุดเดียวกับข้อ 3 ในหน้า Project Settings > Environment Variables จากนั้นกด deploy (ถ้า deploy บนแพลตฟอร์มอื่นที่ไม่ใช่ Vercel ต้องหาบริการเก็บไฟล์อื่นมาแทน Vercel Blob เอง เช่น Supabase Storage)
+
+รันเองในเครื่อง server ก็ได้เช่นกัน:
 
 ```
 npm run build
@@ -99,3 +109,4 @@ npm run start
 - Access Code เป็นรหัสลับตัวเดียวใช้ร่วมกันของทีมแอดมิน ไม่ใช่ระบบสมาชิกรายบุคคล หากต้องการแยกสิทธิ์รายคนหรือดูประวัติว่าใครแก้ไข ควรอัปเกรดเป็นระบบ Firebase Auth ในอนาคต
 - การป้องกันด้วยลายน้ำช่วยระบุแหล่งที่มาและกันการคัดลอกทั่วไป แต่ไม่ใช่ DRM ที่ป้องกันการแคปหน้าจอได้ 100%
 - ไฟล์ PDF จำกัดขนาดไม่เกิน 50MB ต่อไฟล์ (ปรับได้ที่ `src/lib/validation.ts`)
+- Vercel Blob แผนฟรี (Hobby) กำหนดให้ใช้กับโปรเจกต์ส่วนตัว/ไม่แสวงหารายได้เท่านั้น — ดูรายละเอียดที่ [เอกสารราคา Vercel Blob](https://vercel.com/docs/vercel-blob/usage-and-pricing)

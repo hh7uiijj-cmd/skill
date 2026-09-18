@@ -6,6 +6,7 @@ export interface WorkRecord {
   description: string;
   fileName: string;
   fileSize: number;
+  /** Vercel Blob pathname (private access) — see src/lib/blobStorage.ts */
   storagePath: string;
   createdAt: string;
   updatedAt: string;

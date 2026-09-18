@@ -1,12 +1,9 @@
 import { FieldValue } from 'firebase-admin/firestore';
-import { getBucket, getDb } from './firebaseAdmin';
+import { getDb } from './firebaseAdmin';
+import { deleteFile, downloadFile, pathnameFor, saveFile } from './blobStorage';
 import type { WorkInput, WorkRecord } from '../types';
 
 const COLLECTION = 'works';
-
-function storagePathFor(id: string) {
-  return `works/${id}/original.pdf`;
-}
 
 function toWorkRecord(id: string, data: FirebaseFirestore.DocumentData): WorkRecord {
   return {
@@ -17,7 +14,7 @@ function toWorkRecord(id: string, data: FirebaseFirestore.DocumentData): WorkRec
     description: data.description ?? '',
     fileName: data.fileName ?? '',
     fileSize: data.fileSize ?? 0,
-    storagePath: data.storagePath ?? storagePathFor(id),
+    storagePath: data.storagePath ?? pathnameFor(id),
     createdAt: data.createdAt?.toDate?.().toISOString() ?? new Date(0).toISOString(),
     updatedAt: data.updatedAt?.toDate?.().toISOString() ?? new Date(0).toISOString(),
   };
@@ -77,10 +74,7 @@ export async function createWork(input: WorkInput, file: FileInput): Promise<Wor
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
 
-  await getBucket().file(storagePathFor(docRef.id)).save(file.buffer, {
-    contentType: 'application/pdf',
-    resumable: false,
-  });
+  await saveFile(pathnameFor(docRef.id), file.buffer);
 
   const now = FieldValue.serverTimestamp();
   await docRef.set({
@@ -90,7 +84,7 @@ export async function createWork(input: WorkInput, file: FileInput): Promise<Wor
     description: input.description,
     fileName: file.fileName,
     fileSize: file.size,
-    storagePath: storagePathFor(docRef.id),
+    storagePath: pathnameFor(docRef.id),
     createdAt: now,
     updatedAt: now,
   });
@@ -114,10 +108,7 @@ export async function updateWork(id: string, input: Partial<WorkInput>, file?: F
   if (input.description !== undefined) update.description = input.description;
 
   if (file) {
-    await getBucket().file(storagePathFor(id)).save(file.buffer, {
-      contentType: 'application/pdf',
-      resumable: false,
-    });
+    await saveFile(pathnameFor(id), file.buffer);
     update.fileName = file.fileName;
     update.fileSize = file.size;
   }
@@ -133,12 +124,15 @@ export async function deleteWork(id: string): Promise<boolean> {
   const existing = await docRef.get();
   if (!existing.exists) return false;
 
-  await getBucket().file(storagePathFor(id)).delete({ ignoreNotFound: true });
+  try {
+    await deleteFile(pathnameFor(id));
+  } catch {
+    // Already gone (or never uploaded) — don't block deleting the record.
+  }
   await docRef.delete();
   return true;
 }
 
 export async function getOriginalFileBuffer(work: WorkRecord): Promise<Buffer> {
-  const [buffer] = await getBucket().file(work.storagePath).download();
-  return buffer;
+  return downloadFile(work.storagePath);
 }
