@@ -1,11 +1,11 @@
 :root {
   /* Theme-able tokens — overridden per-site by an inline <style> from
      src/lib/theme.ts (values are validated #rrggbb hex before injection). */
-  --color-primary: #4a141c;
-  --color-accent: #f2774f;
-  --color-bg: #fbeee7;
+  --color-primary: #0a0864;
+  --color-accent: #e3b91d;
+  --color-bg: #fbf7ea;
   --color-surface: #ffffff;
-  --color-ink: #241012;
+  --color-ink: #131147;
 
   /* Derived shades — computed from the tokens above so the whole palette
      stays consistent when an admin changes the theme colors. */
@@ -646,8 +646,17 @@ h2 {
 .page-indicator {
   font-size: 0.9rem;
   color: var(--color-muted);
-  min-width: 90px;
   text-align: center;
+}
+
+.page-jump-input {
+  width: 64px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  text-align: center;
+  font-family: inherit;
 }
 
 .loading-state {
