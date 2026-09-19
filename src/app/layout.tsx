@@ -3,10 +3,24 @@ import Link from 'next/link';
 import localFont from 'next/font/local';
 import { env } from '@/lib/env';
 import { isAdminRequest } from '@/lib/apiAuth';
-import { getTheme, themeToCssVariables } from '@/lib/theme';
+import { getTheme, LIGHT_THEME, themeToCssVariables } from '@/lib/theme';
 import { listBatches } from '@/lib/works';
 import { SiteFooter } from '@/components/SiteFooter';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import './globals.css';
+
+// Runs before first paint so a visitor who already chose light mode (or
+// whose OS prefers light, on a first visit) never sees a flash of dark
+// mode. Static string, no interpolated data — safe to inline as-is.
+const NO_FLASH_THEME_SCRIPT = `
+(function () {
+  try {
+    var stored = localStorage.getItem('theme');
+    var light = stored ? stored === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
+    if (light) document.documentElement.setAttribute('data-theme', 'light');
+  } catch (e) {}
+})();
+`;
 
 // TH Sarabun New — used for every piece of text on the site (body copy and
 // headings alike), so both CSS variables below point at the same font files.
@@ -51,11 +65,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [isAdmin, theme, batches] = await Promise.all([isAdminRequest(), getTheme(), listBatches()]);
 
   return (
-    <html lang="th" className={`${thSarabunBody.variable} ${thSarabunDisplay.variable}`}>
+    <html
+      lang="th"
+      className={`${thSarabunBody.variable} ${thSarabunDisplay.variable}`}
+      suppressHydrationWarning
+    >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
         {/* Colors below are re-validated as #rrggbb hex in src/lib/theme.ts before
-            reaching this point, so it's safe to inline them directly. */}
+            reaching this point, so it's safe to inline them directly. Light mode is a
+            fixed palette a visitor can switch to via the header toggle, independent of
+            the admin's (dark) theme settings above. */}
         <style>{themeToCssVariables(theme)}</style>
+        <style>{themeToCssVariables(LIGHT_THEME, ':root[data-theme="light"]')}</style>
       </head>
       <body>
         <header className="site-header">
@@ -65,6 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Link>
             <nav className="nav-links">
               <Link href="/">หน้าแรก</Link>
+              <ThemeToggle />
               {isAdmin ? (
                 <Link href="/admin" className="btn btn-pill-accent">
                   แผงควบคุมแอดมิน

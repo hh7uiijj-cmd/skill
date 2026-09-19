@@ -19,6 +19,17 @@ export const DEFAULT_THEME: SiteTheme = {
   ink: '#f4f3fa',
 };
 
+// Fixed light-mode palette — visitors can switch to it from the header
+// toggle regardless of the admin's (dark) theme settings above, which
+// stay reserved for the site's main/default look.
+export const LIGHT_THEME: SiteTheme = {
+  primary: '#0a0864',
+  accent: '#e3b91d',
+  background: '#fbf7ea',
+  surface: '#ffffff',
+  ink: '#131147',
+};
+
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 const THEME_DOC_PATH = { collection: 'settings', id: 'theme' } as const;
@@ -59,6 +70,6 @@ export async function saveTheme(input: Partial<Record<keyof SiteTheme, unknown>>
   return theme;
 }
 
-export function themeToCssVariables(theme: SiteTheme): string {
-  return `:root{--color-primary:${theme.primary};--color-accent:${theme.accent};--color-bg:${theme.background};--color-surface:${theme.surface};--color-ink:${theme.ink};}`;
+export function themeToCssVariables(theme: SiteTheme, selector = ':root'): string {
+  return `${selector}{--color-primary:${theme.primary};--color-accent:${theme.accent};--color-bg:${theme.background};--color-surface:${theme.surface};--color-ink:${theme.ink};}`;
 }
