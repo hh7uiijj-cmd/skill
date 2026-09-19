@@ -322,10 +322,21 @@ h2 {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  color: rgba(255, 255, 255, 0.92);
-  font-family: var(--font-display), 'TH Sarabun New', sans-serif;
-  font-size: 2.6rem;
-  font-weight: 700;
+  overflow: hidden;
+  box-shadow: inset -6px 0 14px rgba(0, 0, 0, 0.18);
+}
+
+.work-card-spine {
+  position: absolute;
+  inset: 0 0 0 0;
+  width: 10px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.work-card-book-icon {
+  width: 46%;
+  height: auto;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
 }
 
 .work-card-cover .badge {
