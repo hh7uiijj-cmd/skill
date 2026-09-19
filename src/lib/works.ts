@@ -1,7 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { getDb } from './firebaseAdmin';
-import { deleteFile, downloadFile, pathnameFor, saveFile } from './blobStorage';
-import type { WorkInput, WorkRecord } from '../types';
+import { deleteFile, downloadFile, newFileId, pathnameFor, saveFile } from './blobStorage';
+import type { WorkFile, WorkInput, WorkRecord } from '../types';
 
 const COLLECTION = 'works';
 
@@ -12,9 +12,7 @@ function toWorkRecord(id: string, data: FirebaseFirestore.DocumentData): WorkRec
     batch: data.batch ?? '',
     authors: data.authors ?? '',
     description: data.description ?? '',
-    fileName: data.fileName ?? '',
-    fileSize: data.fileSize ?? 0,
-    storagePath: data.storagePath ?? pathnameFor(id),
+    files: Array.isArray(data.files) ? data.files : [],
     createdAt: data.createdAt?.toDate?.().toISOString() ?? new Date(0).toISOString(),
     updatedAt: data.updatedAt?.toDate?.().toISOString() ?? new Date(0).toISOString(),
   };
@@ -64,17 +62,23 @@ export async function getWork(id: string): Promise<WorkRecord | null> {
   return toWorkRecord(doc.id, doc.data() ?? {});
 }
 
-interface FileInput {
+export interface FileInput {
   buffer: Buffer;
   fileName: string;
   size: number;
+  label: string;
 }
 
-export async function createWork(input: WorkInput, file: FileInput): Promise<WorkRecord> {
+export async function createWork(input: WorkInput, fileInputs: FileInput[]): Promise<WorkRecord> {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
 
-  await saveFile(pathnameFor(docRef.id), file.buffer);
+  const files: WorkFile[] = [];
+  for (const fileInput of fileInputs) {
+    const storagePath = pathnameFor(docRef.id, newFileId());
+    await saveFile(storagePath, fileInput.buffer);
+    files.push({ label: fileInput.label, fileName: fileInput.fileName, fileSize: fileInput.size, storagePath });
+  }
 
   const now = FieldValue.serverTimestamp();
   await docRef.set({
@@ -82,9 +86,7 @@ export async function createWork(input: WorkInput, file: FileInput): Promise<Wor
     batch: input.batch,
     authors: input.authors,
     description: input.description,
-    fileName: file.fileName,
-    fileSize: file.size,
-    storagePath: pathnameFor(docRef.id),
+    files,
     createdAt: now,
     updatedAt: now,
   });
@@ -93,7 +95,7 @@ export async function createWork(input: WorkInput, file: FileInput): Promise<Wor
   return toWorkRecord(docRef.id, saved.data() ?? {});
 }
 
-export async function updateWork(id: string, input: Partial<WorkInput>, file?: FileInput): Promise<WorkRecord | null> {
+export async function updateWorkMeta(id: string, input: Partial<WorkInput>): Promise<WorkRecord | null> {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(id);
   const existing = await docRef.get();
@@ -107,13 +109,47 @@ export async function updateWork(id: string, input: Partial<WorkInput>, file?: F
   if (input.authors !== undefined) update.authors = input.authors;
   if (input.description !== undefined) update.description = input.description;
 
-  if (file) {
-    await saveFile(pathnameFor(id), file.buffer);
-    update.fileName = file.fileName;
-    update.fileSize = file.size;
+  await docRef.update(update);
+  const saved = await docRef.get();
+  return toWorkRecord(id, saved.data() ?? {});
+}
+
+export async function addFilesToWork(id: string, fileInputs: FileInput[]): Promise<WorkRecord | null> {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(id);
+  const existing = await docRef.get();
+  if (!existing.exists) return null;
+
+  const currentFiles: WorkFile[] = Array.isArray(existing.data()?.files) ? existing.data()!.files : [];
+  const newFiles: WorkFile[] = [...currentFiles];
+  for (const fileInput of fileInputs) {
+    const storagePath = pathnameFor(id, newFileId());
+    await saveFile(storagePath, fileInput.buffer);
+    newFiles.push({ label: fileInput.label, fileName: fileInput.fileName, fileSize: fileInput.size, storagePath });
   }
 
-  await docRef.update(update);
+  await docRef.update({ files: newFiles, updatedAt: FieldValue.serverTimestamp() });
+  const saved = await docRef.get();
+  return toWorkRecord(id, saved.data() ?? {});
+}
+
+export async function removeFileFromWork(id: string, fileIndex: number): Promise<WorkRecord | null> {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(id);
+  const existing = await docRef.get();
+  if (!existing.exists) return null;
+
+  const currentFiles: WorkFile[] = Array.isArray(existing.data()?.files) ? existing.data()!.files : [];
+  const target = currentFiles[fileIndex];
+  if (!target) return null;
+
+  const newFiles = currentFiles.filter((_, i) => i !== fileIndex);
+  try {
+    await deleteFile(target.storagePath);
+  } catch {
+    // Already gone — don't block removing it from the record.
+  }
+  await docRef.update({ files: newFiles, updatedAt: FieldValue.serverTimestamp() });
   const saved = await docRef.get();
   return toWorkRecord(id, saved.data() ?? {});
 }
@@ -124,15 +160,20 @@ export async function deleteWork(id: string): Promise<boolean> {
   const existing = await docRef.get();
   if (!existing.exists) return false;
 
-  try {
-    await deleteFile(pathnameFor(id));
-  } catch {
-    // Already gone (or never uploaded) — don't block deleting the record.
+  const files: WorkFile[] = Array.isArray(existing.data()?.files) ? existing.data()!.files : [];
+  for (const file of files) {
+    try {
+      await deleteFile(file.storagePath);
+    } catch {
+      // Already gone (or never uploaded) — don't block deleting the record.
+    }
   }
   await docRef.delete();
   return true;
 }
 
-export async function getOriginalFileBuffer(work: WorkRecord): Promise<Buffer> {
-  return downloadFile(work.storagePath);
+export async function getFileBuffer(work: WorkRecord, fileIndex: number): Promise<Buffer> {
+  const file = work.files[fileIndex];
+  if (!file) throw new Error('File not found');
+  return downloadFile(file.storagePath);
 }

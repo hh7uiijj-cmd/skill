@@ -40,3 +40,9 @@ export function validatePdfFile(file: File | null): string | null {
   if (file.size === 0) return 'ไฟล์ว่างเปล่า';
   return null;
 }
+
+export function validateFileLabel(label: string): string | null {
+  if (!label.trim()) return 'กรุณาระบุชื่อไฟล์ (เช่น รายงานฉบับเต็ม, บทความ)';
+  if (label.length > 100) return 'ชื่อไฟล์ยาวเกินไป (ไม่เกิน 100 ตัวอักษร)';
+  return null;
+}

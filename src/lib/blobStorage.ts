@@ -1,11 +1,18 @@
+import { randomUUID } from 'node:crypto';
 import { del, get, put } from '@vercel/blob';
 import { env } from './env';
 
 // PDF files live in Vercel Blob (private access — never a public URL) instead
 // of Firebase Storage, so hosting only needs Firestore's free Spark plan.
+// Each file within a work gets its own random id so files can be added or
+// removed independently without colliding pathnames.
 
-export function pathnameFor(workId: string): string {
-  return `works/${workId}/original.pdf`;
+export function pathnameFor(workId: string, fileId: string): string {
+  return `works/${workId}/${fileId}.pdf`;
+}
+
+export function newFileId(): string {
+  return randomUUID();
 }
 
 // Fail fast instead of hanging through the SDK's own retry/backoff if Blob

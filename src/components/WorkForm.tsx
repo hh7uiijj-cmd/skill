@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import type { WorkRecord } from '@/types';
 
 interface WorkFormProps {
@@ -14,15 +14,34 @@ interface FieldErrors {
   [key: string]: string;
 }
 
+interface FileRow {
+  key: string;
+  label: string;
+}
+
 export function WorkForm({ mode, work, batches }: WorkFormProps) {
   const router = useRouter();
+  const idPrefix = useId();
   const [title, setTitle] = useState(work?.title ?? '');
   const [batch, setBatch] = useState(work?.batch ?? '');
   const [authors, setAuthors] = useState(work?.authors ?? '');
   const [description, setDescription] = useState(work?.description ?? '');
+  const [fileRows, setFileRows] = useState<FileRow[]>([{ key: `${idPrefix}-0`, label: '' }]);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  function addFileRow() {
+    setFileRows((rows) => [...rows, { key: `${idPrefix}-${rows.length}-${Date.now()}`, label: '' }]);
+  }
+
+  function removeFileRow(key: string) {
+    setFileRows((rows) => (rows.length > 1 ? rows.filter((r) => r.key !== key) : rows));
+  }
+
+  function setRowLabel(key: string, label: string) {
+    setFileRows((rows) => rows.map((r) => (r.key === key ? { ...r, label } : r)));
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -31,7 +50,24 @@ export function WorkForm({ mode, work, batches }: WorkFormProps) {
     setSubmitting(true);
 
     try {
-      const formData = new FormData(e.currentTarget);
+      const rawFormData = new FormData(e.currentTarget);
+      const formData = new FormData();
+      formData.set('title', rawFormData.get('title') ?? '');
+      formData.set('batch', rawFormData.get('batch') ?? '');
+      formData.set('authors', rawFormData.get('authors') ?? '');
+      formData.set('description', rawFormData.get('description') ?? '');
+
+      if (mode === 'create') {
+        for (const row of fileRows) {
+          const fileInput = e.currentTarget.querySelector<HTMLInputElement>(`[data-file-key="${row.key}"]`);
+          const file = fileInput?.files?.[0];
+          if (file) {
+            formData.append('files', file);
+            formData.append('labels', row.label);
+          }
+        }
+      }
+
       const url = mode === 'create' ? '/api/works' : `/api/works/${work?.id}`;
       const method = mode === 'create' ? 'POST' : 'PATCH';
 
@@ -59,6 +95,7 @@ export function WorkForm({ mode, work, batches }: WorkFormProps) {
   return (
     <form className="card" onSubmit={handleSubmit}>
       {formError && <p className="alert alert-error">{formError}</p>}
+      {errors.files && <p className="error-text">{errors.files}</p>}
 
       <div className="field">
         <label htmlFor="title" className="required">
@@ -125,18 +162,36 @@ export function WorkForm({ mode, work, batches }: WorkFormProps) {
         {errors.description && <p className="error-text">{errors.description}</p>}
       </div>
 
-      <div className="field">
-        <label htmlFor="file" className={mode === 'create' ? 'required' : ''}>
-          ไฟล์ PDF
-        </label>
-        {mode === 'edit' && work && (
+      {mode === 'create' && (
+        <div className="field">
+          <label className="required">ไฟล์ PDF</label>
           <span className="hint">
-            ไฟล์ปัจจุบัน: {work.fileName} — เว้นว่างไว้หากไม่ต้องการเปลี่ยนไฟล์
+            เพิ่มได้มากกว่า 1 ไฟล์ต่อผลงาน (เช่น &quot;รายงานฉบับเต็ม&quot; และ &quot;บทความ&quot;) — ตั้งชื่อกำกับแต่ละไฟล์ให้ชัดเจน
           </span>
-        )}
-        <input id="file" name="file" type="file" accept="application/pdf" required={mode === 'create'} />
-        {errors.file && <p className="error-text">{errors.file}</p>}
-      </div>
+          {fileRows.map((row, i) => (
+            <div key={row.key} className="file-row">
+              <input
+                type="text"
+                placeholder="ชื่อไฟล์ เช่น รายงานฉบับเต็ม, บทความ"
+                value={row.label}
+                onChange={(e) => setRowLabel(row.key, e.target.value)}
+                maxLength={100}
+              />
+              <input type="file" accept="application/pdf" data-file-key={row.key} required />
+              {fileRows.length > 1 && (
+                <button type="button" className="btn btn-secondary" onClick={() => removeFileRow(row.key)}>
+                  ลบ
+                </button>
+              )}
+              {errors[`label-${i}`] && <p className="error-text">{errors[`label-${i}`]}</p>}
+              {errors[`file-${i}`] && <p className="error-text">{errors[`file-${i}`]}</p>}
+            </div>
+          ))}
+          <button type="button" className="btn btn-secondary" onClick={addFileRow} style={{ alignSelf: 'flex-start' }}>
+            + เพิ่มไฟล์อีกรายการ
+          </button>
+        </div>
+      )}
 
       <div className="row-actions">
         <button type="submit" className="btn btn-primary" disabled={submitting}>

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/apiAuth';
-import { deleteWork, getWork, updateWork } from '@/lib/works';
-import { validatePdfFile, validateWorkFields } from '@/lib/validation';
+import { deleteWork, getWork, updateWorkMeta } from '@/lib/works';
+import { validateWorkFields } from '@/lib/validation';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -30,26 +30,11 @@ export async function PATCH(request: Request, { params }: Params) {
     description: formData.get('description'),
   });
 
-  const file = formData.get('file');
-  const fileEntry = file instanceof File && file.size > 0 ? file : null;
-  if (fileEntry) {
-    const fileError = validatePdfFile(fileEntry);
-    if (fileError) errors.file = fileError;
-  }
-
   if (Object.keys(errors).length > 0) {
     return NextResponse.json({ errors }, { status: 400 });
   }
 
-  const fileInput = fileEntry
-    ? {
-        buffer: Buffer.from(await fileEntry.arrayBuffer()),
-        fileName: fileEntry.name,
-        size: fileEntry.size,
-      }
-    : undefined;
-
-  const work = await updateWork(id, value, fileInput);
+  const work = await updateWorkMeta(id, value);
   if (!work) {
     return NextResponse.json({ error: 'ไม่พบผลงานนี้' }, { status: 404 });
   }

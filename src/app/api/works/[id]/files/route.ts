@@ -1,36 +1,26 @@
 import { NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/apiAuth';
-import { createWork, listWorks, type FileInput } from '@/lib/works';
-import { validateFileLabel, validatePdfFile, validateWorkFields } from '@/lib/validation';
+import { addFilesToWork, type FileInput } from '@/lib/works';
+import { validateFileLabel, validatePdfFile } from '@/lib/validation';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const batch = searchParams.get('batch')?.trim() || undefined;
-  const search = searchParams.get('search')?.trim() || undefined;
-  const works = await listWorks({ batch, search });
-  return NextResponse.json({ works });
+interface Params {
+  params: Promise<{ id: string }>;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: Request, { params }: Params) {
   if (!(await isAdminRequest())) {
     return NextResponse.json({ error: 'ต้องเข้าสู่ระบบแอดมินก่อน' }, { status: 401 });
   }
 
+  const { id } = await params;
   const formData = await request.formData();
-  const { errors, value } = validateWorkFields({
-    title: formData.get('title'),
-    batch: formData.get('batch'),
-    authors: formData.get('authors'),
-    description: formData.get('description'),
-  });
-
   const fileEntries = formData.getAll('files').filter((f): f is File => f instanceof File);
   const labelEntries = formData.getAll('labels').map((l) => (typeof l === 'string' ? l.trim() : ''));
 
+  const errors: Record<string, string> = {};
   if (fileEntries.length === 0) {
     errors.files = 'กรุณาแนบไฟล์ PDF อย่างน้อย 1 ไฟล์';
   }
-
   fileEntries.forEach((file, i) => {
     const fileError = validatePdfFile(file);
     if (fileError) errors[`file-${i}`] = fileError;
@@ -51,7 +41,9 @@ export async function POST(request: Request) {
     })),
   );
 
-  const work = await createWork(value, fileInputs);
-
+  const work = await addFilesToWork(id, fileInputs);
+  if (!work) {
+    return NextResponse.json({ error: 'ไม่พบผลงานนี้' }, { status: 404 });
+  }
   return NextResponse.json({ work }, { status: 201 });
 }

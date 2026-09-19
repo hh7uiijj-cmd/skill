@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getWork, listBatches } from '@/lib/works';
 import { WorkForm } from '@/components/WorkForm';
+import { WorkFilesManager } from '@/components/WorkFilesManager';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,7 @@ export default async function EditWorkPage({ params }: Props) {
     <>
       <h1>แก้ไขผลงาน</h1>
       <p className="subtitle">แก้ไขข้อมูลของ &quot;{work.title}&quot;</p>
+      <WorkFilesManager workId={work.id} files={work.files} />
       <WorkForm mode="edit" work={work} batches={batches} />
     </>
   );
