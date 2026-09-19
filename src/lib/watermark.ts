@@ -23,9 +23,9 @@ async function loadWatermarkLogo(): Promise<Buffer> {
 }
 
 /**
- * Stamps a tiled, semi-transparent watermark logo plus a traceability footer
- * line on every page of a PDF. Used for the "download" copy so it stays
- * identifiable even after it leaves the site.
+ * Stamps one large, faint, centered watermark logo plus a traceability
+ * footer line on every page of a PDF. Used for the "download" copy so it
+ * stays identifiable even after it leaves the site.
  */
 export async function watermarkPdf(originalBytes: Uint8Array, footerText: string): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(originalBytes);
@@ -36,22 +36,16 @@ export async function watermarkPdf(originalBytes: Uint8Array, footerText: string
 
   for (const page of pdfDoc.getPages()) {
     const { width, height } = page.getSize();
-    const logoWidth = Math.min(width, height) * 0.22;
+    const logoWidth = Math.min(width, height) * 0.75;
     const logoHeight = logoWidth * logoAspect;
-    const colStep = logoWidth * 1.8;
-    const rowStep = logoHeight * 1.8;
 
-    for (let y = -rowStep; y < height + rowStep; y += rowStep) {
-      for (let x = -logoWidth; x < width + logoWidth; x += colStep) {
-        page.drawImage(logo, {
-          x,
-          y,
-          width: logoWidth,
-          height: logoHeight,
-          opacity: 0.16,
-        });
-      }
-    }
+    page.drawImage(logo, {
+      x: (width - logoWidth) / 2,
+      y: (height - logoHeight) / 2,
+      width: logoWidth,
+      height: logoHeight,
+      opacity: 0.08,
+    });
 
     page.drawText(footerText, {
       x: 16,

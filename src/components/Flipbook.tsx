@@ -65,8 +65,6 @@ export function Flipbook({ fileUrl }: FlipbookProps) {
     setNumPages(doc.numPages);
   }, []);
 
-  const watermarkCells = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
-
   useEffect(() => {
     setPageInput(String(pageIndex + 1));
   }, [pageIndex]);
@@ -118,10 +116,8 @@ export function Flipbook({ fileUrl }: FlipbookProps) {
           ) : null}
         </Document>
         <div className="watermark-overlay" aria-hidden="true">
-          {watermarkCells.map((i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src="/watermark-logo.jpg" alt="" />
-          ))}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/watermark-logo.jpg" alt="" />
         </div>
       </div>
       {numPages ? (
