@@ -37,7 +37,13 @@ export async function listWorks(options: { batch?: string; search?: string } = {
 
   let query: FirebaseFirestore.Query = db.collection(COLLECTION);
   if (options.batch) {
+    // Filtering by batch without also ordering by it in Firestore avoids
+    // needing a composite (batch, createdAt) index — sort in memory instead.
     query = query.where('batch', '==', options.batch);
+    const snapshot = await query.get();
+    return snapshot.docs
+      .map((doc) => toWorkRecord(doc.id, doc.data()))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
   query = query.orderBy('createdAt', 'desc');
   const snapshot = await query.get();
