@@ -1,14 +1,6 @@
 import Link from 'next/link';
 import type { WorkRecord } from '@/types';
 
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-  } catch {
-    return iso;
-  }
-}
-
 // A small curated palette (navy/gold brand colors plus a few complementary
 // tones) so covers read as distinct printed books sitting on a shelf,
 // rather than one repeated gradient. Picked deterministically per work id
@@ -30,20 +22,17 @@ function coverFor(id: string): { bg: string; fg: string } {
   return COVER_PALETTE[hash % COVER_PALETTE.length]!;
 }
 
+// Card shows only what's needed to recognize a book on a shelf — title and
+// รุ่น. Author, description, and date are one click away on the work page.
 export function WorkCard({ work }: { work: WorkRecord }) {
   const cover = coverFor(work.id);
 
   return (
-    <Link href={`/works/${work.id}`} className="work-card">
-      <div className="work-card-cover" style={{ background: cover.bg, color: cover.fg }} aria-hidden="true">
-        <span className="work-card-cover-batch">รุ่น {work.batch}</span>
-        <p className="work-card-cover-title">{work.title}</p>
-      </div>
-      <div className="work-card-body">
-        <p className="work-title">{work.title}</p>
-        {work.authors && <p className="work-meta">โดย {work.authors}</p>}
-        <p className="work-meta">เผยแพร่เมื่อ {formatDate(work.createdAt)}</p>
-      </div>
+    <Link href={`/works/${work.id}`} className="work-card" style={{ background: cover.bg, color: cover.fg }}>
+      <span className="work-card-spine" aria-hidden="true" />
+      <span className="work-card-pages" aria-hidden="true" />
+      <span className="work-card-batch">รุ่น {work.batch}</span>
+      <p className="work-card-title">{work.title}</p>
     </Link>
   );
 }

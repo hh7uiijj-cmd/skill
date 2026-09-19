@@ -298,58 +298,89 @@ h2 {
   gap: 22px;
 }
 
+/* A book cover, not a card-with-a-cover — the whole element IS the book,
+   sized like an actual paperback (2:3), with a flat spine edge on the
+   left, rounded outer edge on the right, and a sliver of "page" lines
+   peeking out to sell the illusion of thickness. */
 .work-card {
-  background: var(--color-surface);
-  border-radius: var(--radius);
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
+  position: relative;
+  aspect-ratio: 2 / 3;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  justify-content: flex-end;
+  padding: 16px 16px 18px 20px;
+  border-radius: 3px 10px 10px 3px;
+  text-decoration: none;
+  overflow: hidden;
+  box-shadow:
+    -3px 0 0 rgba(0, 0, 0, 0.32) inset,
+    0 10px 22px rgba(0, 0, 0, 0.35);
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
+.work-card::after {
+  /* glossy diagonal sheen */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 30%);
+  pointer-events: none;
+}
+
 .work-card:hover {
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    -3px 0 0 rgba(0, 0, 0, 0.32) inset,
+    0 18px 32px rgba(0, 0, 0, 0.45);
   transform: translateY(-3px);
 }
 
-.work-card-cover {
-  position: relative;
-  aspect-ratio: 3 / 4;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 16px 14px;
+.work-card-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  background: rgba(0, 0, 0, 0.35);
 }
 
-.work-card-cover-batch {
+.work-card-pages {
+  position: absolute;
+  right: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 4px;
+  border-radius: 0 6px 6px 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.75) 0,
+    rgba(255, 255, 255, 0.75) 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 3px
+  );
+}
+
+.work-card-batch {
+  position: relative;
   align-self: flex-start;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  opacity: 0.75;
+  opacity: 0.7;
+  margin-bottom: auto;
 }
 
-.work-card-cover-title {
+.work-card-title {
+  position: relative;
   margin: 0;
   font-family: var(--font-display), 'TH Sarabun New', sans-serif;
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.work-card-body {
-  padding: 14px 16px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .badge {
@@ -417,13 +448,6 @@ h2 {
   .row-scroll .work-card {
     flex-basis: 148px;
   }
-}
-
-.work-title {
-  font-weight: 700;
-  font-size: 1.02rem;
-  margin: 0;
-  color: var(--color-ink);
 }
 
 .work-meta {
