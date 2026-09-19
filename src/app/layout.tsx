@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Noto_Sans_Thai, Noto_Serif_Thai } from 'next/font/google';
+import localFont from 'next/font/local';
 import { env } from '@/lib/env';
 import { isAdminRequest } from '@/lib/apiAuth';
 import { getTheme, themeToCssVariables } from '@/lib/theme';
@@ -8,16 +8,36 @@ import { listBatches } from '@/lib/works';
 import { SiteFooter } from '@/components/SiteFooter';
 import './globals.css';
 
-const notoSansThai = Noto_Sans_Thai({
-  subsets: ['thai', 'latin'],
-  weight: ['400', '500', '600', '700'],
+// TH Sarabun New — used for every piece of text on the site (body copy and
+// headings alike), so both CSS variables below point at the same font files.
+// (next/font requires each call's arguments to be written out as literals,
+// so the file list can't be shared via a variable — it's duplicated below.)
+const thSarabunBody = localFont({
+  src: [
+    { path: '../../assets/fonts/th-sarabun-new/THSarabunNew-webfont.woff', weight: '400', style: 'normal' },
+    { path: '../../assets/fonts/th-sarabun-new/THSarabunNew_italic-webfont.woff', weight: '400', style: 'italic' },
+    { path: '../../assets/fonts/th-sarabun-new/THSarabunNew_bold-webfont.woff', weight: '700', style: 'normal' },
+    {
+      path: '../../assets/fonts/th-sarabun-new/THSarabunNew_bolditalic-webfont.woff',
+      weight: '700',
+      style: 'italic',
+    },
+  ],
   variable: '--font-body',
   display: 'swap',
 });
 
-const notoSerifThai = Noto_Serif_Thai({
-  subsets: ['thai', 'latin'],
-  weight: ['600', '700'],
+const thSarabunDisplay = localFont({
+  src: [
+    { path: '../../assets/fonts/th-sarabun-new/THSarabunNew-webfont.woff', weight: '400', style: 'normal' },
+    { path: '../../assets/fonts/th-sarabun-new/THSarabunNew_italic-webfont.woff', weight: '400', style: 'italic' },
+    { path: '../../assets/fonts/th-sarabun-new/THSarabunNew_bold-webfont.woff', weight: '700', style: 'normal' },
+    {
+      path: '../../assets/fonts/th-sarabun-new/THSarabunNew_bolditalic-webfont.woff',
+      weight: '700',
+      style: 'italic',
+    },
+  ],
   variable: '--font-display',
   display: 'swap',
 });
@@ -31,7 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [isAdmin, theme, batches] = await Promise.all([isAdminRequest(), getTheme(), listBatches()]);
 
   return (
-    <html lang="th" className={`${notoSansThai.variable} ${notoSerifThai.variable}`}>
+    <html lang="th" className={`${thSarabunBody.variable} ${thSarabunDisplay.variable}`}>
       <head>
         {/* Colors below are re-validated as #rrggbb hex in src/lib/theme.ts before
             reaching this point, so it's safe to inline them directly. */}

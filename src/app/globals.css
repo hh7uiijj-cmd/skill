@@ -8,18 +8,24 @@
   --color-ink: #131147;
 
   /* Derived shades — computed from the tokens above so the whole palette
-     stays consistent when an admin changes the theme colors. */
+     stays consistent (light or dark) when an admin changes the theme colors.
+     Each mixes toward --color-surface/--color-ink instead of a hardcoded
+     white/black, so they stay legible whichever way bg/ink are set. */
   --color-primary-dark: color-mix(in srgb, var(--color-primary) 80%, black);
-  --color-primary-soft: color-mix(in srgb, var(--color-primary) 12%, white);
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
   --color-accent-dark: color-mix(in srgb, var(--color-accent) 82%, black);
-  --color-accent-soft: color-mix(in srgb, var(--color-accent) 14%, white);
-  --color-muted: color-mix(in srgb, var(--color-ink) 45%, white);
-  --color-border: color-mix(in srgb, var(--color-primary) 12%, white);
+  --color-accent-soft: color-mix(in srgb, var(--color-accent) 24%, var(--color-surface));
+  --color-muted: color-mix(in srgb, var(--color-ink) 55%, var(--color-surface));
+  --color-border: color-mix(in srgb, var(--color-ink) 16%, transparent);
   --color-danger: #b3261e;
 
   --radius: 14px;
   --radius-pill: 999px;
-  color-scheme: light;
+  color-scheme: dark;
+}
+
+html {
+  font-size: 17px;
 }
 
 * {
@@ -35,20 +41,20 @@ body {
 body {
   background: var(--color-bg);
   color: var(--color-ink);
-  font-family: var(--font-body), 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body), 'TH Sarabun New', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.6;
 }
 
 h1,
 h2,
 h3 {
-  font-family: var(--font-display), 'Noto Serif Thai', serif;
-  color: var(--color-primary);
+  font-family: var(--font-display), 'TH Sarabun New', sans-serif;
+  color: var(--color-ink);
   letter-spacing: -0.01em;
 }
 
 a {
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 .container {
@@ -75,7 +81,7 @@ a {
 }
 
 .brand {
-  font-family: var(--font-display), 'Noto Serif Thai', serif;
+  font-family: var(--font-display), 'TH Sarabun New', sans-serif;
   font-weight: 700;
   font-size: 1.3rem;
   text-decoration: none;
@@ -120,61 +126,101 @@ h2 {
 
 /* ---------- Hero ---------- */
 
-.hero {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 32px;
-  align-items: center;
-  background: var(--color-surface);
-  border-radius: 20px;
-  padding: 40px;
-  margin-bottom: 32px;
-  box-shadow: 0 10px 30px rgba(74, 20, 28, 0.08);
+/* Breaks out of the centered .container to bleed edge-to-edge, regardless
+   of where in the page it's placed. */
+.hero-full {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-bottom: 40px;
+  padding: 72px 20px 84px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  background:
+    radial-gradient(circle at 16% 22%, color-mix(in srgb, var(--color-accent) 24%, transparent), transparent 45%),
+    radial-gradient(circle at 86% 12%, color-mix(in srgb, var(--color-primary) 60%, transparent), transparent 50%),
+    linear-gradient(180deg, var(--color-bg), color-mix(in srgb, var(--color-primary) 24%, var(--color-bg)));
 }
 
-.hero h1 {
-  font-size: 2.4rem;
+.hero-full::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 10%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.hero-inner h1 {
+  font-size: 2.6rem;
   line-height: 1.25;
+  margin: 0 0 12px;
+}
+
+.hero-inner .subtitle {
+  max-width: 520px;
+  margin: 0 auto 28px;
 }
 
 .hero-search {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  max-width: 420px;
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 6px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
 }
 
 .hero-search input {
   flex: 1;
-  padding: 12px 16px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border);
-  font-size: 0.95rem;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 12px 18px;
+  font-size: 1rem;
+  color: var(--color-ink);
   font-family: inherit;
 }
 
-.hero-art {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.hero-search input::placeholder {
+  color: var(--color-muted);
 }
 
-.hero-art svg {
-  width: 100%;
-  max-width: 280px;
-  height: auto;
+.hero-search input:focus {
+  outline: none;
 }
 
-@media (max-width: 760px) {
-  .hero {
-    grid-template-columns: 1fr;
-    padding: 28px 20px;
+.hero-search .btn {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 600px) {
+  .hero-full {
+    padding: 56px 16px 64px;
   }
-  .hero-art {
-    order: -1;
+  .hero-inner h1 {
+    font-size: 1.9rem;
   }
-  .hero-art svg {
-    max-width: 180px;
+  .hero-search {
+    flex-direction: column;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    gap: 10px;
+  }
+  .hero-search input {
+    background: var(--color-surface);
+    border-radius: var(--radius-pill);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -233,7 +279,7 @@ h2 {
   border-radius: 50%;
   border: 1.5px solid var(--color-border);
   background: var(--color-surface);
-  color: var(--color-primary);
+  color: var(--color-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,7 +294,7 @@ h2 {
 
 .work-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 22px;
 }
 
@@ -265,27 +311,36 @@ h2 {
 }
 
 .work-card:hover {
-  box-shadow: 0 12px 28px rgba(74, 20, 28, 0.14);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
   transform: translateY(-3px);
 }
 
 .work-card-cover {
-  height: 110px;
+  position: relative;
+  aspect-ratio: 3 / 4;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
   color: rgba(255, 255, 255, 0.92);
-  font-family: var(--font-display), 'Noto Serif Thai', serif;
-  font-size: 2.2rem;
+  font-family: var(--font-display), 'TH Sarabun New', sans-serif;
+  font-size: 2.6rem;
   font-weight: 700;
 }
 
+.work-card-cover .badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
 .work-card-body {
-  padding: 16px;
+  padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .badge {
@@ -297,6 +352,62 @@ h2 {
   font-weight: 700;
   padding: 3px 12px;
   border-radius: var(--radius-pill);
+}
+
+/* ---------- Horizontal rows (home page) ---------- */
+
+.row-section {
+  margin-bottom: 36px;
+}
+
+.row-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.row-header h2 {
+  margin: 0;
+}
+
+.row-viewall {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.row-viewall:hover {
+  text-decoration: underline;
+}
+
+.row-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  padding: 2px 2px 10px;
+  margin: -2px -2px 0;
+}
+
+.row-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.row-scroll .work-card {
+  flex: 0 0 170px;
+  scroll-snap-align: start;
+}
+
+@media (max-width: 600px) {
+  .row-scroll .work-card {
+    flex-basis: 148px;
+  }
 }
 
 .work-title {
@@ -413,6 +524,7 @@ h2 {
   font-size: 0.95rem;
   font-family: inherit;
   background: #fff;
+  color: #1a1a2e;
 }
 
 .field input[type='color'] {
@@ -444,6 +556,8 @@ h2 {
   border: 1px solid var(--color-border);
   font-size: 0.9rem;
   font-family: inherit;
+  background: #fff;
+  color: #1a1a2e;
 }
 
 .file-row input[type='file'] {
@@ -534,7 +648,7 @@ h2 {
 
 .admin-table th {
   background: var(--color-primary-soft);
-  color: var(--color-primary-dark);
+  color: var(--color-ink);
 }
 
 .admin-table tr:last-child td {
@@ -681,7 +795,7 @@ h2 {
 }
 
 .footer-brand {
-  font-family: var(--font-display), 'Noto Serif Thai', serif;
+  font-family: var(--font-display), 'TH Sarabun New', sans-serif;
   color: #fff;
   font-size: 1.15rem;
   font-weight: 700;

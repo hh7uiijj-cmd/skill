@@ -8,14 +8,15 @@ export interface SiteTheme {
   ink: string;
 }
 
-// Sampled from the department emblem (public/watermark-logo.jpg): deep navy
-// circle + gold ring/lettering.
+// Dark theme sampled from the department emblem (public/watermark-logo.jpg):
+// deep navy circle + gold ring/lettering, background/surface darkened to a
+// near-black navy so the whole site reads as one consistent dark UI.
 export const DEFAULT_THEME: SiteTheme = {
   primary: '#0a0864',
   accent: '#e3b91d',
-  background: '#fbf7ea',
-  surface: '#ffffff',
-  ink: '#131147',
+  background: '#0a0e27',
+  surface: '#141a3d',
+  ink: '#f4f3fa',
 };
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
