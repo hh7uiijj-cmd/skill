@@ -7,11 +7,9 @@ import type { WorkFile } from '@/types';
 interface WorkFilesViewerProps {
   workId: string;
   files: WorkFile[];
-  batch: string;
-  siteName: string;
 }
 
-export function WorkFilesViewer({ workId, files, batch, siteName }: WorkFilesViewerProps) {
+export function WorkFilesViewer({ workId, files }: WorkFilesViewerProps) {
   const [selected, setSelected] = useState(0);
   const file = files[selected];
 
@@ -41,11 +39,7 @@ export function WorkFilesViewer({ workId, files, batch, siteName }: WorkFilesVie
         </a>
       </div>
 
-      <Flipbook
-        key={file.storagePath}
-        fileUrl={`/api/works/${workId}/files/${selected}/view`}
-        watermarkLabel={`${siteName} • ${batch}`}
-      />
+      <Flipbook key={file.storagePath} fileUrl={`/api/works/${workId}/files/${selected}/view`} />
     </div>
   );
 }

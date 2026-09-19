@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { env } from '@/lib/env';
 import { getWork } from '@/lib/works';
 import { WorkFilesViewer } from '@/components/WorkFilesViewer';
 
@@ -23,7 +22,7 @@ export default async function WorkViewerPage({ params }: Props) {
         </div>
       </div>
 
-      <WorkFilesViewer workId={work.id} files={work.files} batch={work.batch} siteName={env.siteName()} />
+      <WorkFilesViewer workId={work.id} files={work.files} />
 
       <p className="work-meta">
         การอ่านออนไลน์นี้มีลายน้ำกำกับเพื่อป้องกันการคัดลอก หากต้องการไฟล์เก็บไว้ กรุณากดปุ่มดาวน์โหลดด้านบน

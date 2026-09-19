@@ -23,10 +23,9 @@ export async function GET(_request: Request, { params }: Params) {
   const original = await getFileBuffer(work, fileIndex);
 
   const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
-  const watermarkText = `${env.siteName()} • ${work.batch}`;
-  const footerText = `ดาวน์โหลดเมื่อ ${stamp} UTC • ${env.siteName()}`;
+  const footerText = `ดาวน์โหลดเมื่อ ${stamp} UTC • ${env.siteName()} • ${work.batch}`;
 
-  const watermarked = await watermarkPdf(original, watermarkText, footerText);
+  const watermarked = await watermarkPdf(original, footerText);
 
   return new NextResponse(new Uint8Array(watermarked), {
     headers: {

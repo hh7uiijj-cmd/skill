@@ -31,10 +31,9 @@ const FlipPage = forwardRef<HTMLDivElement, FlipPageProps>(function FlipPage({ p
 
 interface FlipbookProps {
   fileUrl: string;
-  watermarkLabel: string;
 }
 
-export function Flipbook({ fileUrl, watermarkLabel }: FlipbookProps) {
+export function Flipbook({ fileUrl }: FlipbookProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +85,8 @@ export function Flipbook({ fileUrl, watermarkLabel }: FlipbookProps) {
         </Document>
         <div className="watermark-overlay" aria-hidden="true">
           {watermarkCells.map((i) => (
-            <span key={i}>{watermarkLabel}</span>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src="/watermark-logo.jpg" alt="" />
           ))}
         </div>
       </div>
